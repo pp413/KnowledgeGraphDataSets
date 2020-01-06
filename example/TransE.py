@@ -3,7 +3,7 @@ from knowledgegraphs import KGDataSet, Evaluation
 
 if __name__ ==  "__main__":
 
-    data = KGDataSet('nations')
+    data = KGDataSet('FB15k-237')
     eva = Evaluation(*data())
     
     class TransE(torch.nn.Module):
@@ -32,7 +32,6 @@ if __name__ ==  "__main__":
         def predict(self, triplet):
             
             triplet = triplet.to(self.device).squeeze()
-            # print(triplet)
             
             h = self.e(triplet[:, 0])
             r = self.r(triplet[:, 1])
