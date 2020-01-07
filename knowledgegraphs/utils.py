@@ -406,14 +406,14 @@ class Evaluation:
                         test_set.add(pair)
         
         valid_data = {
-            'data_dict': valid,
+            'data_dict': {key: np.array(values) for (key, values) in valid.items()},
             'pairs': np.array([[x[0], x[1]] for x in valid_set]),
             'filter': valid_filter,
             'filter_pairs': valid_filter_set & valid_set
         }
         
         test_data = {
-            'data_dict': test,
+            'data_dict': {key: np.array(values) for (key, values) in test.items()},
             'pairs': np.array([[x[0], x[1]] for x in test_set]),
             'filter': test_filter,
             'filter_pairs': test_filter_set & test_set
@@ -426,21 +426,23 @@ class Evaluation:
         pairs = data['pairs']
         
         def get_rank(score, targets):
-            targets = set(targets)
-            ranks = np.argsort(score * (-1))    # from big to small
-            ranks = [i for i, x in enumerate(ranks) if x in targets]
-            ranks = np.sort(ranks)
-            ranks = [x - i for i, x in enumerate(ranks)]
-            return np.array(ranks) + 1
+            ranks = np.ones_like(targets)
+            for i, x in enumerate(targets):
+                score -= score[x]
+                rank = np.sum(score >= 0)
+                ranks[i] = rank
+            ranks = np.sort(ranks) 
+            return np.array([x - i for i, x in enumerate(ranks)])
         
         def produce(consumer):
             consumer.send(None)
             franks = np.array([])
             if input_triplet:
+                tail = np.arange(num_nodes).reshape(num_nodes, 1)
                 for pair in tqdm(pairs):
                     _pair = pair.reshape(1, 2)
                     _pair = np.tile(_pair, (num_nodes, 1))
-                    tail = np.arange(num_nodes).reshape(num_nodes, 1)
+                    
                     triplet = np.concatenate((_pair, tail), 1)
                     score = consumer.send(triplet)
                     
